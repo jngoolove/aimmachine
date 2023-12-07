@@ -107,16 +107,6 @@ def update_color_display_from_hsv():
     r, g, b = int(r * 255), int(g * 255), int(b * 255)
     update_color_display_from_rgb(r, g, b)
 
-def update_color_display_from_rgb(r, g, b):
-    color = '#{:02x}{:02x}{:02x}'.format(r, g, b)
-    color_display.config(bg=color)
-    r_entry.delete(0, tk.END)
-    r_entry.insert(0, str(r))
-    g_entry.delete(0, tk.END)
-    g_entry.insert(0, str(g))
-    b_entry.delete(0, tk.END)
-    b_entry.insert(0, str(b))
-
 def on_color_wheel_click(event):
     global current_hue
     x, y = event.x - 200, event.y - 200
@@ -134,30 +124,65 @@ def hex_to_rgb(hex_color):
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
-def on_hex_entry_change(*args):
-    try:
-        rgb_color = hex_to_rgb(hex_entry.get())
-        update_color_display_from_rgb(*rgb_color)
-    except ValueError:
-        pass  # Ignore invalid input
+
+
+def on_hex_entry_change(event=None):
+    if len(hex_entry.get()) == 7:  # Check for complete hex input
+        try:
+            rgb_color = hex_to_rgb(hex_entry.get())
+            update_color_display_from_rgb(*rgb_color)
+        except ValueError:
+            pass  # Invalid hex input, ignore
+
+
+
 
 # Modify update_color_display_from_rgb to also update hex entry
+
+
 def update_color_display_from_rgb(r, g, b):
+    # Convert to integer and clamp the values between 0 and 255
+    r, g, b = max(0, min(255, int(r))), max(0, min(255, int(g))), max(0, min(255, int(b)))
+    
+    # Update the color display
     color = '#{:02x}{:02x}{:02x}'.format(r, g, b)
     color_display.config(bg=color)
+
+    # Update the RGB entry fields
     r_entry.delete(0, tk.END)
     r_entry.insert(0, str(r))
     g_entry.delete(0, tk.END)
     g_entry.insert(0, str(g))
     b_entry.delete(0, tk.END)
     b_entry.insert(0, str(b))
+
+    # Update the hex entry field
     hex_entry.delete(0, tk.END)
     hex_entry.insert(0, color)
+
+
+def output_color():
+    if hex_entry.get() and len(hex_entry.get()) == 7:  # Check for valid hex input
+        try:
+            rgb_color = hex_to_rgb(hex_entry.get())
+            update_color_display_from_rgb(*rgb_color)
+        except ValueError:
+            pass  # Invalid hex input, ignore
+    else:
+        # Use RGB values, defaulting to 0 if empty
+        r = r_entry.get() or '0'
+        g = g_entry.get() or '0'
+        b = b_entry.get() or '0'
+        update_color_display_from_rgb(r, g, b)
 
 
 
 hex_entry = tk.Entry(root, width=10)
 hex_entry.pack()
+
+# Bind the event handler to the hex entry field
+#hex_entry.bind("<FocusOut>", on_hex_entry_change)  # This triggers when the user clicks or tabs out of the entry field
+# Bind the event handler to the hex entry field
 hex_entry.bind("<KeyRelease>", on_hex_entry_change)
 
 # Create a canvas for the color wheel
@@ -185,8 +210,9 @@ r_entry.pack()
 g_entry.pack()
 b_entry.pack()
 
-# Button to output the selected color
-output_button = tk.Button(root, text="Output Color", command=lambda: update_color_display_from_rgb(int(r_entry.get()), int(g_entry.get()), int(b_entry.get())))
+
+# Update the button command
+output_button = tk.Button(root, text="Output Color", command=output_color)
 output_button.pack()
 
 # Button to capture the screen area
